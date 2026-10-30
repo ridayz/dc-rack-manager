@@ -142,8 +142,12 @@ const M={
   green:new THREE.MeshBasicMaterial({color:0x22c55e}),
   yel:new THREE.MeshBasicMaterial({color:0xeab308}),
   red:new THREE.MeshBasicMaterial({color:0xef4444}),
-  glowC:new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:.35}),
+  glowC:new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:.55}),
+  glowH:new THREE.MeshBasicMaterial({color:0xf97316,transparent:true,opacity:.18}),
+  ledWarm:new THREE.MeshBasicMaterial({color:0xffb066}),
   led:new THREE.MeshBasicMaterial({color:0x38bdf8}),
+  doorG:new THREE.MeshPhysicalMaterial({color:0x9fd4ff,transparent:true,opacity:.1,roughness:.02,side:THREE.DoubleSide}),
+  doorF:new THREE.MeshStandardMaterial({color:0x3a4356,roughness:.4,metalness:.7}),
   ledFloor:new THREE.MeshBasicMaterial({color:0x9fe8ff}),
 };
 const G={
@@ -195,6 +199,10 @@ function buildHall(){
         const un=new THREE.Mesh(G.unit,M.unit);un.position.set(0,y,.56);g.add(un);
         if(u%3===0){const led=new THREE.Mesh(G.led,M.led);led.position.set(-.3+(u%4)*.15,y,.575);g.add(led);}
       }
+      // pintu kaca bening depan + frame tipis + handle
+      const dg2=new THREE.Mesh(new THREE.BoxGeometry(1.0,2.3,.03),M.doorG);dg2.position.set(0,1.25,.60);g.add(dg2);
+      [[-.52],[.52]].forEach(([fx])=>{const fr=new THREE.Mesh(new THREE.BoxGeometry(.05,2.34,.05),M.doorF);fr.position.set(fx,1.25,.60);g.add(fr);});
+      const hd=new THREE.Mesh(new THREE.BoxGeometry(.04,.4,.06),M.steel);hd.position.set(.42,1.25,.63);g.add(hd);
       const lb=textSprite('R'+String(d.no).padStart(2,'0'));
       lb.scale.set(.85,.21,1);lb.position.set(0,2.95,0);g.add(lb);
       g.position.set((i-4.5)*1.5,0,rz);
@@ -206,10 +214,16 @@ function buildHall(){
   rowsZ.forEach((rz,ri)=>{
     if(ri<rowsZ.length-1){
       const zc=(rz+rowsZ[ri+1])/2;
-      const glow=new THREE.Mesh(G.glow,M.glowC);glow.position.set(0,.075,zc);hallGroup.add(glow);
-      [-0.75,0.75].forEach(off=>{const led=new THREE.Mesh(G.ledF,M.ledFloor);led.position.set(0,.09,zc+off);hallGroup.add(led);});
-      const pl=new THREE.PointLight(0x38bdf8,6,16);pl.position.set(0,.6,zc);hallGroup.add(pl);
-      const s=textSprite(ri%2===0?'HOT AISLE • ZONA PANAS 35°C':'COLD AISLE • ZONA DINGIN 22°C',ri%2===0?'#fdba74':'#67e8f9','clear',640,64,30);
+      const isCold=ri%2===0;
+      const glow=new THREE.Mesh(G.glow,isCold?M.glowC:M.glowH);glow.position.set(0,.075,zc);hallGroup.add(glow);
+      [-0.75,0.75].forEach(off=>{const led=new THREE.Mesh(G.ledF,isCold?M.ledFloor:M.ledWarm);led.position.set(0,.09,zc+off);hallGroup.add(led);});
+      const pl=new THREE.PointLight(isCold?0x38bdf8:0xf97316,isCold?9:1.5,18);pl.position.set(0,.6,zc);hallGroup.add(pl);
+      // pantulan floor ke rak: 2 uplight per lorong
+      [-4,4].forEach(px=>{
+        const up=new THREE.PointLight(isCold?0x66ccff:0xffaa55,isCold?2.5:1,7);
+        up.position.set(px,.25,zc);hallGroup.add(up);
+      });
+      const s=textSprite(ri%2===0?'COLD AISLE • ZONA DINGIN 22°C':'HOT AISLE • ZONA PANAS 35°C',ri%2===0?'#67e8f9':'#fdba74','clear',640,64,30);
       s.scale.set(3.2,.32,1);s.position.set(0,3.4,zc);hallGroup.add(s);
     }
   });
@@ -292,7 +306,7 @@ function goView(px,py,pz,tx,ty,tz){
 }
 // preset view
 const gV=document.getElementById('gView');
-[['🏠 Default',0,6,13,0,1.2,-2],['🚪 Depan',0,1.7,12.5,0,1.4,-4],['🔙 Belakang',0,1.7,-9.5,0,1.4,-2],['🦅 Top',0,26,0.5,0,0,-1],['❄️ Cold',-6,1.6,-2.8,6,1.2,-2.8],['🔥 Hot',6,1.6,-6,0,1.2,-6]].forEach(([label,px,py,pz,tx,ty,tz])=>{
+[['🏠 Default',0,6,13,0,1.2,-2],['🚪 Depan',0,1.7,12.5,0,1.4,-4],['🔙 Belakang',0,1.7,-9.5,0,1.4,-2],['🦅 Top',0,26,0.5,0,0,-1],['❄️ Cold',-6,1.6,0.4,6,1.2,0.4],['🔥 Hot',6,1.6,-2.8,0,1.2,-2.8]].forEach(([label,px,py,pz,tx,ty,tz])=>{
   const b=document.createElement('button');b.className='fbtn';b.textContent=label;b.style.padding='6px 2px';
   b.onclick=()=>goView(px,py,pz,tx,ty,tz);gV.appendChild(b);
 });
